@@ -29,8 +29,10 @@ bool HashFile(std::ostream &output, const fs::path &path);
 
 static std::string REAL_SID;
 static int LANGUAGE = 3;
+static int REGION = 3;
 static bool DX11 = true;
-static int EXPANSION_LEVEL = 2;
+static int EXPANSION_LEVEL = 0;
+static std::string GAME_VER;
 
 constexpr const char *LOGIN_PAGE = "https://ffxiv-login.square-enix.com/oauth/ffxivarr/login/top?lng=en&rgn=";
 constexpr const char *LOGIN_URL = "https://ffxiv-login.square-enix.com/oauth/ffxivarr/login/login.send";
@@ -45,6 +47,8 @@ LoginResult PerformLogin()
 {
     LoginResult res;
 
+    GAME_VER = GetLocalGamever();
+
     std::string stored;
     res = GetStored(stored);
     if (res != LoginResult::Success) return res;
@@ -54,6 +58,7 @@ LoginResult PerformLogin()
     if (res != LoginResult::Success) return res;
 
     EXPANSION_LEVEL = login_info.maxex;
+    REGION = login_info.region;
 
     res = GetRealSID(login_info.sid, REAL_SID);
     if (res != LoginResult::Success) return res;
@@ -68,9 +73,17 @@ void LaunchGame()
     auto exe = pexe.generic_string();
 
     std::ostringstream arb;
-    arb << "DEV.TestSID=" << REAL_SID
+    arb << "language=1"
+        << " DEV.UseSqPack=1"
+        << " DEV.DataPathType=1"
+        << " DEV.LobbyHost01=neolobby01.ffxiv.com"
+        << " DEV.LobbyPort01=54994"
+        << " DEV.LobbyHost02=neolobby02.ffxiv.com"
+        << " DEV.LobbyPort02=54994"
+        << " DEV.TestSID=" << REAL_SID
         << " DEV.MaxEntitledExpansionID=" << EXPANSION_LEVEL
-        << " language=" << LANGUAGE;
+        << " SYS.Region=" << REGION
+        << " ver=" << GAME_VER;
     auto args = arb.str();
 
     auto cwd = (Credentials::GAME_DIR / "boot").generic_string();
@@ -190,7 +203,7 @@ static LoginResult GetRealSID(const std::string & sid, std::string & result)
 
     Request req = {
         Method::POST,
-        SESSION_URL + GetLocalGamever() + "/" + sid,
+        SESSION_URL + GAME_VER + "/" + sid,
         {
             {"X-Hash-Check", "enabled"},
             {"Referer", LOGIN_PAGE + std::to_string(LANGUAGE)},
