@@ -42,7 +42,7 @@ static INT_PTR CALLBACK DialogHandler(HWND dialog, UINT msg, WPARAM wp, LPARAM l
                 case IDC_LAUNCHBTN:
                 {
                     ReadUIValues(dialog);
-                    if (Credentials::USERNAME.empty() && Credentials::PASSWORD.empty())
+                    if (Credentials::USERNAME.empty() || Credentials::PASSWORD.empty())
                     {
                         MessageBoxW(dialog, L"Please enter a username and password", L"Invalid Entry", MB_OK | MB_ICONWARNING);
                     }
