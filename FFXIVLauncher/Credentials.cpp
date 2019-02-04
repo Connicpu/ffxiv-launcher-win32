@@ -11,17 +11,6 @@ static LSTATUS ReadFromRegistry(std::vector<uint8_t> &data);
 static void WriteBufferStr(std::vector<uint8_t> &buf, const std::string &data);
 static bool ReadBufferStr(const std::vector<uint8_t> &buf, size_t &pos, std::string &data);
 
-bool Credentials::REMEMBER_USERNAME;
-bool Credentials::REMEMBER_PASSWORD;
-bool Credentials::USE_OTP;
-bool Credentials::SKIP_LOGIN;
-bool Credentials::HIDE_USERNAME;
-
-fs::path Credentials::GAME_DIR{ "C:\\Program Files (x86)\\SquareEnix\\FINAL FANTASY XIV - A Realm Reborn" };
-std::string Credentials::USERNAME;
-std::string Credentials::PASSWORD;
-std::string Credentials::OTP;
-
 Credentials CREDENTIALS;
 std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> UTF_CONVERT;
 

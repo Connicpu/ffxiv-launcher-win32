@@ -68,7 +68,7 @@ LoginResult PerformLogin()
 
 void LaunchGame()
 {
-    fs::path pexe = Credentials::GAME_DIR / "game";
+    fs::path pexe = CREDENTIALS.GAME_DIR / "game";
     pexe /= DX11 ? "ffxiv_dx11.exe" : "ffxiv.exe";
     auto exe = pexe.generic_string();
 
@@ -86,7 +86,7 @@ void LaunchGame()
         << " ver=" << GAME_VER;
     auto args = arb.str();
 
-    auto cwd = (Credentials::GAME_DIR / "boot").generic_string();
+    auto cwd = (CREDENTIALS.GAME_DIR / "boot").generic_string();
 
     STARTUPINFOA startup = { sizeof(startup) };
     PROCESS_INFORMATION info = { 0 };
@@ -101,7 +101,7 @@ static std::string GetLocalGamever()
 {
     char data[1024];
 
-    auto path = (Credentials::GAME_DIR / "game/ffxivgame.ver").generic_wstring();
+    auto path = (CREDENTIALS.GAME_DIR / "game/ffxivgame.ver").generic_wstring();
     auto hFile = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (hFile == INVALID_HANDLE_VALUE) return "womp-womp";
 
@@ -153,9 +153,9 @@ static LoginResult GetBaseLogin(const std::string & stored, LoginResponse & resu
         },
         FormEncode({
             {"_STORED_", stored},
-            {"sqexid", Credentials::USERNAME},
-            {"password", Credentials::PASSWORD},
-            {"otppw", Credentials::OTP},
+            {"sqexid", CREDENTIALS.USERNAME},
+            {"password", CREDENTIALS.PASSWORD},
+            {"otppw", CREDENTIALS.OTP},
         }),
     };
 
@@ -188,17 +188,17 @@ static LoginResult GetRealSID(const std::string & sid, std::string & result)
 {
     std::ostringstream hashstrb;
     hashstrb << "ffxivboot.exe/";
-    HashFile(hashstrb, Credentials::GAME_DIR / "boot/ffxivboot.old.exe");
+    HashFile(hashstrb, CREDENTIALS.GAME_DIR / "boot/ffxivboot.old.exe");
     hashstrb << ",ffxivboot64.exe/";
-    HashFile(hashstrb, Credentials::GAME_DIR / "boot/ffxivboot64.exe");
+    HashFile(hashstrb, CREDENTIALS.GAME_DIR / "boot/ffxivboot64.exe");
     hashstrb << ",ffxivlauncher.exe/";
-    HashFile(hashstrb, Credentials::GAME_DIR / "boot/ffxivlauncher.exe");
+    HashFile(hashstrb, CREDENTIALS.GAME_DIR / "boot/ffxivlauncher.exe");
     hashstrb << ",ffxivlauncher64.exe/";
-    HashFile(hashstrb, Credentials::GAME_DIR / "boot/ffxivlauncher64.exe");
+    HashFile(hashstrb, CREDENTIALS.GAME_DIR / "boot/ffxivlauncher64.exe");
     hashstrb << ",ffxivupdater.exe/";
-    HashFile(hashstrb, Credentials::GAME_DIR / "boot/ffxivupdater.exe");
+    HashFile(hashstrb, CREDENTIALS.GAME_DIR / "boot/ffxivupdater.exe");
     hashstrb << ",ffxivupdater64.exe/";
-    HashFile(hashstrb, Credentials::GAME_DIR / "boot/ffxivupdater64.exe");
+    HashFile(hashstrb, CREDENTIALS.GAME_DIR / "boot/ffxivupdater64.exe");
     auto hashstr = hashstrb.str();
 
     Request req = {

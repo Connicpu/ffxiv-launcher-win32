@@ -7,19 +7,20 @@
 class Credentials
 {
 public:
-    static void Load();
-    static LSTATUS Save();
+    void Load();
+    LSTATUS Save();
 
-    static bool REMEMBER_USERNAME;
-    static bool REMEMBER_PASSWORD;
-    static bool USE_OTP;
-    static bool SKIP_LOGIN;
-    static bool HIDE_USERNAME;
+    bool REMEMBER_USERNAME;
+    bool REMEMBER_PASSWORD;
+    bool USE_OTP;
+    bool SKIP_LOGIN;
+    bool HIDE_USERNAME;
 
-    static std::filesystem::path GAME_DIR;
-    static std::string USERNAME;
-    static std::string PASSWORD;
-    static std::string OTP;
+    std::filesystem::path GAME_DIR;
+    std::string USERNAME;
+    std::string PASSWORD;
+    std::string OTP;
 };
 
+extern Credentials CREDENTIALS;
 extern std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> UTF_CONVERT;
