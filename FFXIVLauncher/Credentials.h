@@ -2,6 +2,7 @@
 
 #include <string>
 #include <codecvt>
+#include <filesystem>
 
 class Credentials
 {
@@ -15,6 +16,7 @@ public:
     static bool SKIP_LOGIN;
     static bool HIDE_USERNAME;
 
+    static std::filesystem::path GAME_DIR;
     static std::string USERNAME;
     static std::string PASSWORD;
     static std::string OTP;

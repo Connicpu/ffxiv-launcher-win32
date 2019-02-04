@@ -17,6 +17,7 @@ bool Credentials::USE_OTP;
 bool Credentials::SKIP_LOGIN;
 bool Credentials::HIDE_USERNAME;
 
+fs::path Credentials::GAME_DIR{ "C:\\Program Files (x86)\\SquareEnix\\FINAL FANTASY XIV - A Realm Reborn" };
 std::string Credentials::USERNAME;
 std::string Credentials::PASSWORD;
 std::string Credentials::OTP;
@@ -51,6 +52,10 @@ void Credentials::Load()
         {
             PASSWORD = std::move(*password);
         }
+    }
+    if (ReadBufferStr(data, pos, temp))
+    {
+        GAME_DIR = temp;
     }
 }
 
@@ -87,6 +92,7 @@ LSTATUS Credentials::Save()
 
     WriteBufferStr(data, *encUsername);
     WriteBufferStr(data, *encPassword);
+    WriteBufferStr(data, GAME_DIR.generic_string());
 
     return SaveToRegistry(data);
 }

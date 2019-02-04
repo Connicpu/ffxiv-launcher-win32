@@ -3,10 +3,17 @@
 #include "LoginDialog.h"
 #include "OTPDialog.h"
 #include "Credentials.h"
+#include "Login.h"
 
 INT WINAPI WinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
 {
+    CoInitialize(nullptr);
+
     Credentials::Load();
+
+    std::ostringstream testhash;
+    bool HashFile(std::ostream & output, const fs::path & path);
+    HashFile(testhash, Credentials::GAME_DIR / "boot/ffxivboot.old.exe");
 
     for (int i = 0;; i++)
     {
@@ -28,14 +35,48 @@ INT WINAPI WinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ in
                 case 1: break;
                 case 2: continue;
 
-                default: return -1; // unreachable?
+                default: abort(); // unreachable
             }
+        }
+
+        switch (PerformLogin())
+        {
+            case LoginResult::Success:
+                LaunchGame();
+                break;
+
+            case LoginResult::UpdateRequired:
+                LaunchUpdater();
+                break;
+
+            case LoginResult::InvalidCredentials:
+                MessageBoxW(nullptr, L"Your username, password, or one-time password was incorrect.", L"Login failed", MB_ICONERROR);
+                continue;
+
+            case LoginResult::TooManyLogins:
+                MessageBoxW(nullptr, L"Login failed because of too many failed login attempts.", L"Login failed", MB_ICONERROR);
+                continue;
+
+            case LoginResult::NetworkError:
+                MessageBoxW(nullptr, L"A network error occurred while trying to log in.", L"Login failed", MB_ICONERROR);
+                continue;
+
+            case LoginResult::CuckedBySquare:
+                MessageBoxW(
+                    nullptr,
+                    L"It seems Square Enix has changed something about the login procedure. "
+                    L"Update this app or use the normal launcher.",
+                    L"Login failed",
+                    MB_ICONERROR
+                );
+                LaunchUpdater();
+                break;
+
+            default: abort(); // unreachable
         }
 
         break;
     }
-
-    // TODO: Log in and launch the game
 
     return 0;
 }

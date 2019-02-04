@@ -6,9 +6,11 @@
 static void InitCheckboxes(HWND dialog) noexcept;
 static void SetSkipBox(HWND dialog) noexcept;
 static void SetUserHide(HWND dialog) noexcept;
+static void SetGDir(HWND dialog) noexcept;
 static void InitializeUI(HWND dialog) noexcept;
 static void ReadUIValues(HWND dialog) noexcept;
 static void ReadCheckboxes(HWND dialog) noexcept;
+static void SelectFolder(HWND dialog) noexcept;
 static INT_PTR CALLBACK DialogHandler(HWND dialog, UINT msg, WPARAM wp, LPARAM lp) noexcept;
 
 bool ShowLoginDialog(HINSTANCE hinst) noexcept
@@ -44,7 +46,17 @@ static INT_PTR CALLBACK DialogHandler(HWND dialog, UINT msg, WPARAM wp, LPARAM l
                     ReadUIValues(dialog);
                     if (Credentials::USERNAME.empty() || Credentials::PASSWORD.empty())
                     {
-                        MessageBoxW(dialog, L"Please enter a username and password", L"Invalid Entry", MB_OK | MB_ICONWARNING);
+                        MessageBoxW(dialog, L"Please enter a username and password", L"Invalid Entry", MB_ICONWARNING);
+                    }
+                    else if (!fs::exists(Credentials::GAME_DIR / "game") || !fs::exists(Credentials::GAME_DIR / "boot"))
+                    {
+                        MessageBoxW(
+                            dialog,
+                            L"Please select the directory where the game files are located. "
+                            L"There should be 2 folders called 'game' and 'boot' in the selected directory.",
+                            L"Invalid Directory",
+                            MB_ICONERROR
+                        );
                     }
                     else
                     {
@@ -52,7 +64,14 @@ static INT_PTR CALLBACK DialogHandler(HWND dialog, UINT msg, WPARAM wp, LPARAM l
                     }
                     return TRUE;
                 }
-                
+
+                case IDC_SETGAMEDIRBTN:
+                {
+                    SelectFolder(dialog);
+                    SetGDir(dialog);
+                    return TRUE;
+                }
+
                 // Update the eligibility of the Skip box when these are changed.
                 case IDC_REMUSRBOX:
                 case IDC_REMPWDBOX:
@@ -92,6 +111,8 @@ static void InitializeUI(HWND dialog) noexcept
 
     InitCheckboxes(dialog);
 
+    SetGDir(dialog);
+
     if (Credentials::REMEMBER_USERNAME)
     {
         auto wtext = UTF_CONVERT.from_bytes(Credentials::USERNAME);
@@ -126,7 +147,7 @@ static void SetSkipBox(HWND dialog) noexcept
 {
     const auto hSkip = GetDlgItem(dialog, IDC_SKIPLOGINBOX);
 
-    if (Credentials::REMEMBER_USERNAME && Credentials::REMEMBER_PASSWORD)
+    if (Credentials::REMEMBER_USERNAME &&Credentials::REMEMBER_PASSWORD)
     {
         EnableWindow(hSkip, TRUE);
     }
@@ -145,6 +166,16 @@ static void SetUserHide(HWND dialog) noexcept
     SendMessageW(hUser, EM_SETPASSWORDCHAR, Credentials::HIDE_USERNAME ? 9679 : 0, 0);
     EnableWindow(hUser, FALSE);
     EnableWindow(hUser, TRUE);
+}
+
+void SetGDir(HWND dialog) noexcept
+{
+    auto gdir = Credentials::GAME_DIR.generic_wstring();
+    if (!fs::exists(Credentials::GAME_DIR))
+    {
+        gdir = L"Please select a directory";
+    }
+    SetWindowTextW(GetDlgItem(dialog, IDC_GAMEDIR), gdir.c_str());
 }
 
 static void ReadUIValues(HWND dialog) noexcept
@@ -192,4 +223,30 @@ static void ReadCheckboxes(HWND dialog) noexcept
     // Hide Username
     state = SendDlgItemMessageW(dialog, IDC_HIDEUSRBOX, BM_GETCHECK, 0, 0);
     Credentials::HIDE_USERNAME = state != 0;
+}
+
+void SelectFolder(HWND dialog) noexcept
+{
+    HRESULT hr;
+
+    ATL::CComPtr<IFileOpenDialog> fd;
+    hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&fd));
+    if (FAILED(hr)) return;
+
+    hr = fd->SetOptions(FOS_PICKFOLDERS);
+    if (FAILED(hr)) return;
+
+    hr = fd->Show(dialog);
+    if (FAILED(hr)) return; // Failure here means the user hit "Cancel"
+
+    ATL::CComPtr<IShellItem> result;
+    hr = fd->GetResult(&result);
+    if (FAILED(hr)) return;
+
+    wchar_t *path;
+    hr = result->GetDisplayName(SIGDN_FILESYSPATH, &path);
+    if (FAILED(hr)) return;
+
+    Credentials::GAME_DIR = path;
+    CoTaskMemFree(path);
 }
