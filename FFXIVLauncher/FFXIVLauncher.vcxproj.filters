@@ -58,4 +58,12 @@
       <Filter>Resource Files</Filter>
     </Manifest>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="icon_hide.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="dalamud.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
 </Project>

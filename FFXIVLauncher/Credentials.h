@@ -6,18 +6,18 @@
 class Credentials
 {
 public:
-    void Load();
-    void Save();
+    static void Load();
+    static LSTATUS Save();
 
     static bool REMEMBER_USERNAME;
     static bool REMEMBER_PASSWORD;
     static bool USE_OTP;
+    static bool SKIP_LOGIN;
+    static bool HIDE_USERNAME;
 
     static std::string USERNAME;
     static std::string PASSWORD;
     static std::string OTP;
 };
 
-extern Credentials CREDENTIALS;
-
-static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> UTF_CONVERT;
+extern std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> UTF_CONVERT;

@@ -1,3 +1,3 @@
 #pragma once
 
-bool ShowOTPDialog(HINSTANCE hinst) noexcept;
+int ShowOTPDialog(HINSTANCE hinst) noexcept;
