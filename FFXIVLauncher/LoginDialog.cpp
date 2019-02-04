@@ -44,11 +44,11 @@ static INT_PTR CALLBACK DialogHandler(HWND dialog, UINT msg, WPARAM wp, LPARAM l
                 case IDC_LAUNCHBTN:
                 {
                     ReadUIValues(dialog);
-                    if (CREDENTIALS.USERNAME.empty() || CREDENTIALS.PASSWORD.empty())
+                    if (CREDENTIALS.username.empty() || CREDENTIALS.password.empty())
                     {
                         MessageBoxW(dialog, L"Please enter a username and password", L"Invalid Entry", MB_ICONWARNING);
                     }
-                    else if (!fs::exists(CREDENTIALS.GAME_DIR / "game") || !fs::exists(CREDENTIALS.GAME_DIR / "boot"))
+                    else if (!fs::exists(CREDENTIALS.game_dir / "game") || !fs::exists(CREDENTIALS.game_dir / "boot"))
                     {
                         MessageBoxW(
                             dialog,
@@ -113,14 +113,14 @@ static void InitializeUI(HWND dialog) noexcept
 
     SetGDir(dialog);
 
-    if (CREDENTIALS.REMEMBER_USERNAME)
+    if (CREDENTIALS.remember_username)
     {
-        auto wtext = UTF_CONVERT.from_bytes(CREDENTIALS.USERNAME);
+        auto wtext = UTF_CONVERT.from_bytes(CREDENTIALS.username);
         SetWindowTextW(GetDlgItem(dialog, IDC_USERNAMEBOX), wtext.c_str());
     }
-    if (CREDENTIALS.REMEMBER_PASSWORD)
+    if (CREDENTIALS.remember_password)
     {
-        auto wtext = UTF_CONVERT.from_bytes(CREDENTIALS.PASSWORD);
+        auto wtext = UTF_CONVERT.from_bytes(CREDENTIALS.password);
         SetWindowTextW(GetDlgItem(dialog, IDC_PASSWORDBOX), wtext.c_str());
     }
 
@@ -134,10 +134,10 @@ static void InitializeUI(HWND dialog) noexcept
 
 static void InitCheckboxes(HWND dialog) noexcept
 {
-    SendDlgItemMessageW(dialog, IDC_HIDEUSRBOX, BM_SETCHECK, CREDENTIALS.HIDE_USERNAME, 0);
-    SendDlgItemMessageW(dialog, IDC_REMUSRBOX, BM_SETCHECK, CREDENTIALS.REMEMBER_USERNAME, 0);
-    SendDlgItemMessageW(dialog, IDC_REMPWDBOX, BM_SETCHECK, CREDENTIALS.REMEMBER_PASSWORD, 0);
-    SendDlgItemMessageW(dialog, IDC_USEOTPBOX, BM_SETCHECK, CREDENTIALS.USE_OTP, 0);
+    SendDlgItemMessageW(dialog, IDC_HIDEUSRBOX, BM_SETCHECK, CREDENTIALS.hide_username, 0);
+    SendDlgItemMessageW(dialog, IDC_REMUSRBOX, BM_SETCHECK, CREDENTIALS.remember_username, 0);
+    SendDlgItemMessageW(dialog, IDC_REMPWDBOX, BM_SETCHECK, CREDENTIALS.remember_password, 0);
+    SendDlgItemMessageW(dialog, IDC_USEOTPBOX, BM_SETCHECK, CREDENTIALS.use_otp, 0);
 
     SetUserHide(dialog);
     SetSkipBox(dialog);
@@ -147,31 +147,31 @@ static void SetSkipBox(HWND dialog) noexcept
 {
     const auto hSkip = GetDlgItem(dialog, IDC_SKIPLOGINBOX);
 
-    if (CREDENTIALS.REMEMBER_USERNAME &&CREDENTIALS.REMEMBER_PASSWORD)
+    if (CREDENTIALS.remember_username &&CREDENTIALS.remember_password)
     {
         EnableWindow(hSkip, TRUE);
     }
     else
     {
         EnableWindow(hSkip, FALSE);
-        CREDENTIALS.SKIP_LOGIN = false;
+        CREDENTIALS.skip_login = false;
     }
 
-    SendMessageW(hSkip, BM_SETCHECK, CREDENTIALS.SKIP_LOGIN, 0);
+    SendMessageW(hSkip, BM_SETCHECK, CREDENTIALS.skip_login, 0);
 }
 
 static void SetUserHide(HWND dialog) noexcept
 {
     const auto hUser = GetDlgItem(dialog, IDC_USERNAMEBOX);
-    SendMessageW(hUser, EM_SETPASSWORDCHAR, CREDENTIALS.HIDE_USERNAME ? 9679 : 0, 0);
+    SendMessageW(hUser, EM_SETPASSWORDCHAR, CREDENTIALS.hide_username ? 9679 : 0, 0);
     EnableWindow(hUser, FALSE);
     EnableWindow(hUser, TRUE);
 }
 
 void SetGDir(HWND dialog) noexcept
 {
-    auto gdir = CREDENTIALS.GAME_DIR.generic_wstring();
-    if (!fs::exists(CREDENTIALS.GAME_DIR))
+    auto gdir = CREDENTIALS.game_dir.generic_wstring();
+    if (!fs::exists(CREDENTIALS.game_dir))
     {
         gdir = L"Please select a directory";
     }
@@ -187,14 +187,14 @@ static void ReadUIValues(HWND dialog) noexcept
     const auto unameLen = GetWindowTextLengthW(hUsername) + 1;
     wTemp.resize(unameLen);
     GetWindowTextW(hUsername, &wTemp.at(0), unameLen);
-    CREDENTIALS.USERNAME = UTF_CONVERT.to_bytes(wTemp.data());
+    CREDENTIALS.username = UTF_CONVERT.to_bytes(wTemp.data());
 
     // Password
     const auto hPassword = GetDlgItem(dialog, IDC_PASSWORDBOX);
     const auto passLen = GetWindowTextLengthW(hPassword) + 1;
     wTemp.resize(passLen);
     GetWindowTextW(hPassword, &wTemp.at(0), passLen);
-    CREDENTIALS.PASSWORD = UTF_CONVERT.to_bytes(wTemp.data());
+    CREDENTIALS.password = UTF_CONVERT.to_bytes(wTemp.data());
 
     // Checkboxes
     ReadCheckboxes(dialog);
@@ -206,23 +206,23 @@ static void ReadCheckboxes(HWND dialog) noexcept
 
     // Remember Username
     state = SendDlgItemMessageW(dialog, IDC_REMUSRBOX, BM_GETCHECK, 0, 0);
-    CREDENTIALS.REMEMBER_USERNAME = state != 0;
+    CREDENTIALS.remember_username = state != 0;
 
     // Remember Password
     state = SendDlgItemMessageW(dialog, IDC_REMPWDBOX, BM_GETCHECK, 0, 0);
-    CREDENTIALS.REMEMBER_PASSWORD = state != 0;
+    CREDENTIALS.remember_password = state != 0;
 
     // Use OTP
     state = SendDlgItemMessageW(dialog, IDC_USEOTPBOX, BM_GETCHECK, 0, 0);
-    CREDENTIALS.USE_OTP = state != 0;
+    CREDENTIALS.use_otp = state != 0;
 
     // Skip
     state = SendDlgItemMessageW(dialog, IDC_SKIPLOGINBOX, BM_GETCHECK, 0, 0);
-    CREDENTIALS.SKIP_LOGIN = state != 0;
+    CREDENTIALS.skip_login = state != 0;
 
     // Hide Username
     state = SendDlgItemMessageW(dialog, IDC_HIDEUSRBOX, BM_GETCHECK, 0, 0);
-    CREDENTIALS.HIDE_USERNAME = state != 0;
+    CREDENTIALS.hide_username = state != 0;
 }
 
 void SelectFolder(HWND dialog) noexcept
@@ -247,6 +247,6 @@ void SelectFolder(HWND dialog) noexcept
     hr = result->GetDisplayName(SIGDN_FILESYSPATH, &path);
     if (FAILED(hr)) return;
 
-    CREDENTIALS.GAME_DIR = path;
+    CREDENTIALS.game_dir = path;
     CoTaskMemFree(path);
 }

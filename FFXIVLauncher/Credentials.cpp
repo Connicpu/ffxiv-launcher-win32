@@ -20,47 +20,47 @@ void Credentials::Load()
     if (ReadFromRegistry(data) != S_OK) return;
     if (data.size() < 9) return;
 
-    REMEMBER_USERNAME = data[0] != 0;
-    REMEMBER_PASSWORD = data[1] != 0;
-    USE_OTP = data[2] != 0;
-    SKIP_LOGIN = data[3] != 0;
-    HIDE_USERNAME = data[4] != 0;
+    remember_username = data[0] != 0;
+    remember_password = data[1] != 0;
+    use_otp = data[2] != 0;
+    skip_login = data[3] != 0;
+    hide_username = data[4] != 0;
 
     size_t pos = 5;
     std::string temp;
     if (ReadBufferStr(data, pos, temp))
     {
-        if (auto username = Decrypt(temp))
+        if (auto usr = Decrypt(temp))
         {
-            USERNAME = std::move(*username);
+            username = std::move(*usr);
         }
     }
     if (ReadBufferStr(data, pos, temp))
     {
-        if (auto password = Decrypt(temp))
+        if (auto pwd = Decrypt(temp))
         {
-            PASSWORD = std::move(*password);
+            password = std::move(*pwd);
         }
     }
     if (ReadBufferStr(data, pos, temp))
     {
-        GAME_DIR = temp;
+        game_dir = temp;
     }
 }
 
 LSTATUS Credentials::Save()
 {
-    auto encUsername = Encrypt(USERNAME);
+    auto encUsername = Encrypt(username);
     if (!encUsername) return GetLastError();
 
-    auto encPassword = Encrypt(PASSWORD);
+    auto encPassword = Encrypt(password);
     if (!encPassword) return GetLastError();
 
-    if (!REMEMBER_USERNAME)
+    if (!remember_username)
     {
         encUsername->clear();
     }
-    if (!REMEMBER_PASSWORD)
+    if (!remember_password)
     {
         encPassword->clear();
     }
@@ -73,15 +73,15 @@ LSTATUS Credentials::Save()
     std::vector<uint8_t> data;
     data.reserve(9 + encUsername->size() + encPassword->size());
 
-    data.push_back(REMEMBER_USERNAME);
-    data.push_back(REMEMBER_PASSWORD);
-    data.push_back(USE_OTP);
-    data.push_back(SKIP_LOGIN);
-    data.push_back(HIDE_USERNAME);
+    data.push_back(remember_username);
+    data.push_back(remember_password);
+    data.push_back(use_otp);
+    data.push_back(skip_login);
+    data.push_back(hide_username);
 
     WriteBufferStr(data, *encUsername);
     WriteBufferStr(data, *encPassword);
-    WriteBufferStr(data, GAME_DIR.generic_string());
+    WriteBufferStr(data, game_dir.generic_string());
 
     return SaveToRegistry(data);
 }

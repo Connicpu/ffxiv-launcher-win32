@@ -10,16 +10,16 @@ public:
     void Load();
     LSTATUS Save();
 
-    bool REMEMBER_USERNAME;
-    bool REMEMBER_PASSWORD;
-    bool USE_OTP;
-    bool SKIP_LOGIN;
-    bool HIDE_USERNAME;
+    bool remember_username;
+    bool remember_password;
+    bool use_otp;
+    bool skip_login;
+    bool hide_username;
 
-    std::filesystem::path GAME_DIR;
-    std::string USERNAME;
-    std::string PASSWORD;
-    std::string OTP;
+    std::filesystem::path game_dir;
+    std::string username;
+    std::string password;
+    std::string otp;
 };
 
 extern Credentials CREDENTIALS;

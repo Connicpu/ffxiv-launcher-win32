@@ -11,13 +11,9 @@ INT WINAPI WinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ in
 
     CREDENTIALS.Load();
 
-    std::ostringstream testhash;
-    bool HashFile(std::ostream & output, const fs::path & path);
-    HashFile(testhash, CREDENTIALS.GAME_DIR / "boot/ffxivboot.old.exe");
-
     for (int i = 0;; i++)
     {
-        if (CREDENTIALS.USERNAME.empty() || CREDENTIALS.PASSWORD.empty() || !CREDENTIALS.SKIP_LOGIN || i)
+        if (CREDENTIALS.username.empty() || CREDENTIALS.password.empty() || !CREDENTIALS.skip_login || i)
         {
             if (!ShowLoginDialog(hinst))
             {
@@ -27,7 +23,7 @@ INT WINAPI WinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ in
 
         CREDENTIALS.Save();
 
-        if (CREDENTIALS.USE_OTP)
+        if (CREDENTIALS.use_otp)
         {
             switch (ShowOTPDialog(hinst))
             {

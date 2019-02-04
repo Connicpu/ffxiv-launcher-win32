@@ -44,7 +44,7 @@ static INT_PTR CALLBACK DialogHandler(HWND dialog, UINT msg, WPARAM wp, LPARAM l
                 case IDC_LAUNCHBTN:
                 {
                     ReadUIValues(dialog);
-                    if (CREDENTIALS.OTP.empty())
+                    if (CREDENTIALS.otp.empty())
                     {
                         MessageBoxW(dialog, L"Please enter your one-time password from the app", L"Invalid Entry", MB_OK | MB_ICONWARNING);
                     }
@@ -86,5 +86,5 @@ static void ReadUIValues(HWND dialog) noexcept
     const auto otpLen = GetWindowTextLengthW(hOtp) + 1;
     wTemp.resize(otpLen);
     GetWindowTextW(hOtp, &wTemp.at(0), otpLen);
-    CREDENTIALS.OTP = UTF_CONVERT.to_bytes(wTemp.data());
+    CREDENTIALS.otp = UTF_CONVERT.to_bytes(wTemp.data());
 }

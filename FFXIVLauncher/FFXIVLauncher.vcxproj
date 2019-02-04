@@ -150,6 +150,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Credentials.cpp" />
+    <ClCompile Include="GameDirSearch.cpp" />
     <ClCompile Include="Http.cpp" />
     <ClCompile Include="Login.cpp" />
     <ClCompile Include="LoginDialog.cpp" />
@@ -159,6 +160,7 @@
   <ItemGroup>
     <ClInclude Include="Common.h" />
     <ClInclude Include="Credentials.h" />
+    <ClInclude Include="GameDirSearch.h" />
     <ClInclude Include="Http.h" />
     <ClInclude Include="Login.h" />
     <ClInclude Include="LoginDialog.h" />
