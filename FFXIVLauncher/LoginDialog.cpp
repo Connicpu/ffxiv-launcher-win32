@@ -2,6 +2,7 @@
 #include "LoginDialog.h"
 #include "resource.h"
 #include "Credentials.h"
+#include "GameDirSearch.h"
 
 static void InitCheckboxes(HWND dialog) noexcept;
 static void SetSkipBox(HWND dialog) noexcept;
@@ -11,6 +12,7 @@ static void InitializeUI(HWND dialog) noexcept;
 static void ReadUIValues(HWND dialog) noexcept;
 static void ReadCheckboxes(HWND dialog) noexcept;
 static void SelectFolder(HWND dialog) noexcept;
+static bool IsWine() noexcept;
 static INT_PTR CALLBACK DialogHandler(HWND dialog, UINT msg, WPARAM wp, LPARAM lp) noexcept;
 
 bool ShowLoginDialog(HINSTANCE hinst) noexcept
@@ -23,84 +25,84 @@ static INT_PTR CALLBACK DialogHandler(HWND dialog, UINT msg, WPARAM wp, LPARAM l
 {
     switch (msg)
     {
-        case WM_INITDIALOG:
+    case WM_INITDIALOG:
+    {
+        InitializeUI(dialog);
+        return TRUE;
+    }
+
+    case WM_COMMAND:
+    {
+        switch (LOWORD(wp))
         {
-            InitializeUI(dialog);
-            return TRUE;
-        }
-
-        case WM_COMMAND:
-        {
-            switch (LOWORD(wp))
-            {
-                case 2:
-                case IDC_CANCELBTN:
-                {
-                    EndDialog(dialog, IDCANCEL);
-                    return TRUE;
-                }
-
-                case 1:
-                case IDC_LAUNCHBTN:
-                {
-                    ReadUIValues(dialog);
-                    if (CREDENTIALS.username.empty() || CREDENTIALS.password.empty())
-                    {
-                        MessageBoxW(dialog, L"Please enter a username and password", L"Invalid Entry", MB_ICONWARNING);
-                    }
-                    else if (!fs::exists(CREDENTIALS.game_dir / "game") || !fs::exists(CREDENTIALS.game_dir / "boot"))
-                    {
-                        MessageBoxW(
-                            dialog,
-                            L"Please select the directory where the game files are located. "
-                            L"There should be 2 folders called 'game' and 'boot' in the selected directory.",
-                            L"Invalid Directory",
-                            MB_ICONERROR
-                        );
-                    }
-                    else
-                    {
-                        EndDialog(dialog, IDOK);
-                    }
-                    return TRUE;
-                }
-
-                case IDC_SETGAMEDIRBTN:
-                {
-                    SelectFolder(dialog);
-                    SetGDir(dialog);
-                    return TRUE;
-                }
-
-                // Update the eligibility of the Skip box when these are changed.
-                case IDC_REMUSRBOX:
-                case IDC_REMPWDBOX:
-                {
-                    ReadCheckboxes(dialog);
-                    SetSkipBox(dialog);
-                    return TRUE;
-                }
-
-                case IDC_HIDEUSRBOX:
-                {
-                    ReadCheckboxes(dialog);
-                    SetUserHide(dialog);
-                    return TRUE;
-                }
-            }
-            return FALSE;
-        }
-
-        case WM_CLOSE:
+        case 2:
+        case IDC_CANCELBTN:
         {
             EndDialog(dialog, IDCANCEL);
             return TRUE;
         }
 
-        default:
+        case 1:
+        case IDC_LAUNCHBTN:
         {
-            return FALSE;
+            ReadUIValues(dialog);
+            if (CREDENTIALS.username.empty() || CREDENTIALS.password.empty())
+            {
+                MessageBoxW(dialog, L"Please enter a username and password", L"Invalid Entry", MB_ICONWARNING);
+            }
+            else if (!fs::exists(CREDENTIALS.game_dir / "game") || !fs::exists(CREDENTIALS.game_dir / "boot"))
+            {
+                MessageBoxW(
+                    dialog,
+                    L"Please select the directory where the game files are located. "
+                    L"There should be 2 folders called 'game' and 'boot' in the selected directory.",
+                    L"Invalid Directory",
+                    MB_ICONERROR
+                );
+            }
+            else
+            {
+                EndDialog(dialog, IDOK);
+            }
+            return TRUE;
         }
+
+        case IDC_SETGAMEDIRBTN:
+        {
+            SelectFolder(dialog);
+            SetGDir(dialog);
+            return TRUE;
+        }
+
+        // Update the eligibility of the Skip box when these are changed.
+        case IDC_REMUSRBOX:
+        case IDC_REMPWDBOX:
+        {
+            ReadCheckboxes(dialog);
+            SetSkipBox(dialog);
+            return TRUE;
+        }
+
+        case IDC_HIDEUSRBOX:
+        {
+            ReadCheckboxes(dialog);
+            SetUserHide(dialog);
+            return TRUE;
+        }
+        }
+        return FALSE;
+    }
+
+    case WM_CLOSE:
+    {
+        EndDialog(dialog, IDCANCEL);
+        return TRUE;
+    }
+
+    default:
+    {
+        return FALSE;
+    }
     }
 }
 
@@ -170,12 +172,12 @@ static void SetUserHide(HWND dialog) noexcept
 
 void SetGDir(HWND dialog) noexcept
 {
-    auto gdir = CREDENTIALS.game_dir.generic_wstring();
-    if (!fs::exists(CREDENTIALS.game_dir))
+    const wchar_t *gdir = CREDENTIALS.game_dir.c_str();
+    if (!IsGameDir(CREDENTIALS.game_dir))
     {
         gdir = L"Please select a directory";
     }
-    SetWindowTextW(GetDlgItem(dialog, IDC_GAMEDIR), gdir.c_str());
+    SetWindowTextW(GetDlgItem(dialog, IDC_GAMEDIR), gdir);
 }
 
 static void ReadUIValues(HWND dialog) noexcept
@@ -225,28 +227,50 @@ static void ReadCheckboxes(HWND dialog) noexcept
     CREDENTIALS.hide_username = state != 0;
 }
 
-void SelectFolder(HWND dialog) noexcept
+static void SelectFolder(HWND dialog) noexcept
 {
-    HRESULT hr;
+    if (IsWine())
+    {
+        wchar_t path[MAX_PATH] = { 0 };
 
-    ATL::CComPtr<IFileOpenDialog> fd;
-    hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&fd));
-    if (FAILED(hr)) return;
+        BROWSEINFOW info = { dialog };
+        info.pszDisplayName = path;
+        info.lpszTitle = L"FFXIV Game Directory";
+        info.ulFlags = BIF_RETURNONLYFSDIRS;
 
-    hr = fd->SetOptions(FOS_PICKFOLDERS);
-    if (FAILED(hr)) return;
+        if (SHBrowseForFolderW(&info))
+        {
+            CREDENTIALS.game_dir = path;
+        }
+    }
+    else
+    {
+        HRESULT hr;
 
-    hr = fd->Show(dialog);
-    if (FAILED(hr)) return; // Failure here means the user hit "Cancel"
+        ATL::CComPtr<IFileOpenDialog> fd;
+        hr = CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&fd));
+        if (FAILED(hr)) return;
 
-    ATL::CComPtr<IShellItem> result;
-    hr = fd->GetResult(&result);
-    if (FAILED(hr)) return;
+        hr = fd->SetOptions(FOS_PICKFOLDERS);
+        if (FAILED(hr)) return;
 
-    wchar_t *path;
-    hr = result->GetDisplayName(SIGDN_FILESYSPATH, &path);
-    if (FAILED(hr)) return;
+        hr = fd->Show(dialog);
+        if (FAILED(hr)) return; // Failure here means the user hit "Cancel"
 
-    CREDENTIALS.game_dir = path;
-    CoTaskMemFree(path);
+        ATL::CComPtr<IShellItem> result;
+        hr = fd->GetResult(&result);
+        if (FAILED(hr)) return;
+         
+        wchar_t *path;
+        hr = result->GetDisplayName(SIGDN_FILESYSPATH, &path);
+        if (FAILED(hr)) return;
+
+        CREDENTIALS.game_dir = path;
+        CoTaskMemFree(path);
+    }
+}
+
+bool IsWine() noexcept
+{
+    return !!GetProcAddress(GetModuleHandleA("ntdll.dll"), "wine_get_version");
 }

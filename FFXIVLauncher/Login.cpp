@@ -2,6 +2,7 @@
 #include "Login.h"
 #include "Http.h"
 #include "Credentials.h"
+#include "GameDirSearch.h"
 
 struct LoginResponse
 {
@@ -95,6 +96,34 @@ void LaunchGame()
 
 void LaunchUpdater()
 {
+    wchar_t self_path_buf[2048] = { 0 };
+    GetModuleFileNameW(GetModuleHandleA(nullptr), self_path_buf, 2048);
+
+    fs::path self_path = fs::canonical(self_path_buf);
+    auto boot = fs::canonical(CREDENTIALS.game_dir / "boot/ffxivboot.exe");
+
+    if (self_path == boot || true)
+    {
+        auto temp = fs::temp_directory_path() / "ffxivboot.temp.exe";
+        fs::copy_file(self_path, temp, fs::copy_options::overwrite_existing);
+
+        auto pid = GetCurrentProcessId();
+        auto args = L"update_ffxivboot " + std::to_wstring(pid);
+
+        SHELLEXECUTEINFOW info = { sizeof(info) };
+        info.lpVerb = L"runas";
+        info.lpFile = temp.c_str();
+        info.lpParameters = args.c_str();
+        ShellExecuteExW(&info);
+    }
+    else
+    {
+        auto cwd = CREDENTIALS.game_dir / "boot";
+
+        STARTUPINFOW startup = { sizeof(startup) };
+        PROCESS_INFORMATION info = { 0 };
+        CreateProcessW(boot.c_str(), nullptr, nullptr, nullptr, 0, 0, nullptr, cwd.c_str(), &startup, &info);
+    }
 }
 
 static std::string GetLocalGamever()
@@ -216,6 +245,11 @@ static LoginResult GetRealSID(const std::string & sid, std::string & result)
     Response resp;
     auto hr = DoRequest(req, resp);
     if (FAILED(hr)) return LoginResult::NetworkError;
+
+    if (resp.status == 409)
+    {
+        return LoginResult::UpdateRequired;
+    }
 
     result = resp.patch_id;
 

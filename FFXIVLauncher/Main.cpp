@@ -4,12 +4,42 @@
 #include "OTPDialog.h"
 #include "Credentials.h"
 #include "Login.h"
+#include "GameDirSearch.h"
 
-INT WINAPI WinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int)
+static int RunLauncher(HINSTANCE hinst);
+static int RunUpdateWatcher(std::string_view cmd);
+
+INT WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR pcmd, int)
 {
     CoInitialize(nullptr);
-
     CREDENTIALS.Load();
+
+    std::string_view cmd(pcmd);
+    if (cmd.find("update_ffxivboot", 0) == 0)
+    {
+        return RunUpdateWatcher(cmd);
+    }
+    else if (cmd != "relaunch")
+    {
+        // TEST
+        LaunchUpdater();
+        return 0;
+    }
+    else
+    {
+        return RunLauncher(hinst);
+    }
+}
+
+static int RunLauncher(HINSTANCE hinst)
+{
+    if (!IsGameDir(CREDENTIALS.game_dir))
+    {
+        if (auto game_dir = TryFindGameDir())
+        {
+            CREDENTIALS.game_dir = *game_dir;
+        }
+    }
 
     for (int i = 0;; i++)
     {
@@ -42,8 +72,14 @@ INT WINAPI WinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ in
                 break;
 
             case LoginResult::UpdateRequired:
-                LaunchUpdater();
+            {
+                auto res = MessageBoxW(nullptr, L"An update is required. Would you like to launch the updater?", L"Update required", MB_YESNO | MB_ICONINFORMATION);
+                if (res == IDYES)
+                {
+                    LaunchUpdater();
+                }
                 break;
+            }
 
             case LoginResult::InvalidCredentials:
                 MessageBoxW(nullptr, L"Your username, password, or one-time password was incorrect.", L"Login failed", MB_ICONERROR);
@@ -73,6 +109,13 @@ INT WINAPI WinMain(_In_ HINSTANCE hinst, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ in
 
         break;
     }
+
+    return 0;
+}
+
+int RunUpdateWatcher(std::string_view cmd)
+{
+
 
     return 0;
 }

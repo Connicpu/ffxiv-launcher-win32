@@ -10,5 +10,7 @@
 #include <initializer_list>
 #include <sstream>
 #include <regex>
+#include <iostream>
+#include <optional>
 
 namespace fs = std::filesystem;
