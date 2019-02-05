@@ -188,7 +188,7 @@ static LoginResult GetRealSID(const std::string & sid, std::string & result)
 {
     std::ostringstream hashstrb;
     hashstrb << "ffxivboot.exe/";
-    HashFile(hashstrb, CREDENTIALS.game_dir / "boot/ffxivboot.old.exe");
+    HashFile(hashstrb, CREDENTIALS.game_dir / "boot/ffxivboot.exe.old");
     hashstrb << ",ffxivboot64.exe/";
     HashFile(hashstrb, CREDENTIALS.game_dir / "boot/ffxivboot64.exe");
     hashstrb << ",ffxivlauncher.exe/";
