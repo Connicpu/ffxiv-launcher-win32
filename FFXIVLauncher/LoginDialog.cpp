@@ -3,6 +3,7 @@
 #include "resource.h"
 #include "Credentials.h"
 #include "GameDirSearch.h"
+#include "Login.h"
 
 static void InitCheckboxes(HWND dialog) noexcept;
 static void SetSkipBox(HWND dialog) noexcept;
@@ -74,6 +75,48 @@ static INT_PTR CALLBACK DialogHandler(HWND dialog, UINT msg, WPARAM wp, LPARAM l
             return TRUE;
         }
 
+        case IDC_INSTALLBTN:
+        {
+            auto res = MessageBoxW(
+                dialog,
+                L"Are you sure you want to overwrite ffxivboot.exe?",
+                L"Are you sure",
+                MB_YESNO
+            );
+            if (res != IDYES) return TRUE;
+            try
+            {
+                auto bootdir = CREDENTIALS.game_dir / "boot";
+                auto boot = bootdir / "ffxivboot.exe";
+                auto bootold = bootdir / "ffxivboot.exe.old";
+                auto self = GetSelfPath();
+
+                if (!BootWasReplaced())
+                {
+                    fs::copy_file(boot, bootold, fs::copy_options::overwrite_existing);
+                }
+                fs::copy_file(self, boot, fs::copy_options::overwrite_existing);
+
+                auto hInstall = GetDlgItem(dialog, IDC_INSTALLBTN);
+                ShowWindow(hInstall, SW_HIDE);
+            }
+            catch (const fs::filesystem_error &)
+            {
+                MessageBoxW(
+                    dialog,
+                    L"Failed to install over ffxivboot.exe. "
+                    L"You may need to replace it yourself or run as admin. "
+                    L"Make sure to copy ffxivboot.exe as ffxivboot.exe.old or "
+                    L"you may not be able to update without getting a new copy "
+                    L"of the game installed, if you decide to do it manually.",
+                    L"Install failed",
+                    MB_ICONERROR
+                );
+            }
+
+            return TRUE;
+        }
+
         // Update the eligibility of the Skip box when these are changed.
         case IDC_REMUSRBOX:
         case IDC_REMPWDBOX:
@@ -108,6 +151,22 @@ static INT_PTR CALLBACK DialogHandler(HWND dialog, UINT msg, WPARAM wp, LPARAM l
 
 static void InitializeUI(HWND dialog) noexcept
 {
+    auto self_path = GetSelfPath();
+    auto boot = fs::canonical(CREDENTIALS.game_dir / "boot/ffxivboot.exe");
+
+    if (self_path != boot)
+    {
+        auto selfsize = fs::file_size(self_path);
+        auto bootsize = fs::file_size(boot);
+        if (selfsize != bootsize)
+        {
+            auto hInstall = GetDlgItem(dialog, IDC_INSTALLBTN);
+            auto style = GetWindowLongW(hInstall, GWL_STYLE);
+            style |= WS_VISIBLE;
+            SetWindowLongW(hInstall, GWL_STYLE, style);
+        }
+    }
+
     auto appIcon = LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCE(IDI_APPICON));
     SendMessageW(dialog, WM_SETICON, ICON_BIG, (LPARAM)appIcon);
 

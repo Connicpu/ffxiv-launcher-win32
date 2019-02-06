@@ -26,7 +26,7 @@ static LoginResult GetRealSID(const std::string &sid, std::string &result);
 static std::vector<uint8_t> FormEncode(std::initializer_list<std::pair<const char *, std::string_view>> const &data);
 static void EncodeURIElem(std::ostream &output, std::string_view data);
 static void EncodeFormURIComponent(std::ostream &output, char c);
-bool HashFile(std::ostream &output, const fs::path &path);
+static bool HashFile(std::ostream &output, const fs::path &path);
 
 static std::string REAL_SID;
 static int LANGUAGE = 3;
@@ -96,13 +96,10 @@ void LaunchGame()
 
 void LaunchUpdater()
 {
-    wchar_t self_path_buf[2048] = { 0 };
-    GetModuleFileNameW(GetModuleHandleA(nullptr), self_path_buf, 2048);
-
-    fs::path self_path = fs::canonical(self_path_buf);
+    auto self_path = GetSelfPath();
     auto boot = fs::canonical(CREDENTIALS.game_dir / "boot/ffxivboot.exe");
 
-    if (self_path == boot || true)
+    if (self_path == boot)
     {
         auto temp = fs::temp_directory_path() / "ffxivboot.temp.exe";
         fs::copy_file(self_path, temp, fs::copy_options::overwrite_existing);
@@ -110,11 +107,16 @@ void LaunchUpdater()
         auto pid = GetCurrentProcessId();
         auto args = L"update_ffxivboot " + std::to_wstring(pid);
 
+        auto hWait = CreateSemaphoreW(nullptr, 0, 1, L"Global\\FFXIV_LAUNCHER_TEMP_UPDATER_WAIT");
+
         SHELLEXECUTEINFOW info = { sizeof(info) };
         info.lpVerb = L"runas";
         info.lpFile = temp.c_str();
         info.lpParameters = args.c_str();
         ShellExecuteExW(&info);
+
+        WaitForSingleObject(hWait, 5000);
+        CloseHandle(hWait);
     }
     else
     {
@@ -217,7 +219,14 @@ static LoginResult GetRealSID(const std::string & sid, std::string & result)
 {
     std::ostringstream hashstrb;
     hashstrb << "ffxivboot.exe/";
-    HashFile(hashstrb, CREDENTIALS.game_dir / "boot/ffxivboot.exe.old");
+    if (BootWasReplaced())
+    {
+        HashFile(hashstrb, CREDENTIALS.game_dir / "boot/ffxivboot.exe.old");
+    }
+    else
+    {
+        HashFile(hashstrb, CREDENTIALS.game_dir / "boot/ffxivboot.exe");
+    }
     hashstrb << ",ffxivboot64.exe/";
     HashFile(hashstrb, CREDENTIALS.game_dir / "boot/ffxivboot64.exe");
     hashstrb << ",ffxivlauncher.exe/";
@@ -363,6 +372,40 @@ bool HashFile(std::ostream & output, const fs::path & path)
     output << std::dec;
 
     return true;
+}
+
+bool BootWasReplaced()
+{
+    BOOL res;
+
+    // Get the buffer size required to fill the version info for ffxivboot.exe
+    auto boot = fs::canonical(CREDENTIALS.game_dir / "boot/ffxivboot.exe");
+    auto bufsize = GetFileVersionInfoSizeW(boot.c_str(), nullptr);
+
+    // Create the buffer and get the version info
+    std::unique_ptr<byte[]> buf(new byte[bufsize]);
+    res = GetFileVersionInfoW(boot.c_str(), 0, bufsize, buf.get());
+    if (!res) return false;
+
+    // Get the language and codepage of the info
+    struct { WORD lang, codep; } *translation;
+    UINT subsize = sizeof(translation);
+    res = VerQueryValueW(buf.get(), L"\\VarFileInfo\\Translation", (LPVOID *)&translation, &subsize);
+    if (!res) return false;
+
+    // Create the query string containing the hex lang/cp info
+    wchar_t compparam[] = L"\\StringFileInfo\\XXXXXXXX\\CompanyName";
+    wnsprintfW(compparam + 16, 9, L"%04x%04x", translation->lang, translation->codep);
+    compparam[24] = L'\\';
+
+    // Get the company name
+    wchar_t *compname = nullptr;
+    subsize = sizeof(compname);
+    res = VerQueryValueW(buf.get(), compparam, (LPVOID *)&compname, &subsize);
+    if (!res) return false;
+
+    // If it was made by never been mad, it was replaced
+    return StrCmpW(compname, L"SQUARE ENIX CO., LTD.") != 0;
 }
 
 static int stoi(std::string_view v)

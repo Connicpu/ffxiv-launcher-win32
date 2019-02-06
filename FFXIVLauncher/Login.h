@@ -13,3 +13,4 @@ enum class LoginResult
 LoginResult PerformLogin();
 void LaunchGame();
 void LaunchUpdater();
+bool BootWasReplaced();

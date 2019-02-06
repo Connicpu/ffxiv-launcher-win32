@@ -22,9 +22,10 @@
 #define IDC_HIDEUSRBOX                  1025
 #define IDC_MFCBUTTON1                  1026
 #define IDC_GOBACK                      1027
-#define IDC_BUTTON1                     1028
 #define IDC_SETGAMEDIRBTN               1028
 #define IDC_GAMEDIR                     1029
+#define IDC_BUTTON1                     1030
+#define IDC_INSTALLBTN                  1030
 
 // Next default values for new objects
 // 
@@ -32,7 +33,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        110
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1030
+#define _APS_NEXT_CONTROL_VALUE         1031
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

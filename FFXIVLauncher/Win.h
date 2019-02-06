@@ -6,3 +6,4 @@
 #include <atlbase.h>
 #include <ShObjIdl_core.h>
 #include <ShlObj_core.h>
+#include <tlhelp32.h>

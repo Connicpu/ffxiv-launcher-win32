@@ -19,12 +19,6 @@ INT WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR pcmd, int)
     {
         return RunUpdateWatcher(cmd);
     }
-    else if (cmd != "relaunch")
-    {
-        // TEST
-        LaunchUpdater();
-        return 0;
-    }
     else
     {
         return RunLauncher(hinst);
@@ -113,9 +107,117 @@ static int RunLauncher(HINSTANCE hinst)
     return 0;
 }
 
-int RunUpdateWatcher(std::string_view cmd)
+static int UpdateError(int err)
 {
+    auto msg = L"An error occurred while trying to launch the updater: " + std::to_wstring(err);
+    MessageBoxW(nullptr, msg.c_str(), L"Update error", MB_ICONERROR);
+    return -1;
+}
 
+static HANDLE GetProcess(const fs::path &path)
+{
+    auto name = path.filename();
+
+    auto hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (!hSnap)
+    {
+        UpdateError(-1);
+        _exit(1);
+    }
+
+    PROCESSENTRY32W entry = { sizeof(entry) };
+    if (!Process32FirstW(hSnap, &entry)) return nullptr;
+    while (Process32NextW(hSnap, &entry))
+    {
+        if (StrCmpW(entry.szExeFile, name.c_str()) == 0)
+        {
+            wchar_t buf[2048];
+            DWORD buflen = 2048;
+            auto hProc = OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, FALSE, entry.th32ProcessID);
+            if (!QueryFullProcessImageNameW(hProc, 0, buf, &buflen))
+            {
+                UpdateError(-2);
+                _exit(1);
+            }
+            buf[buflen] = 0;
+            fs::path procPath = fs::canonical(buf);
+            if (path == procPath)
+            {
+                return hProc;
+            }
+            CloseHandle(hProc);
+        }
+    }
+    return nullptr;
+}
+
+static int RunUpdateWatcher(std::string_view cmd)
+{
+    using namespace std::chrono_literals;
+
+    auto bootdir = CREDENTIALS.game_dir / "boot";
+    auto boot = bootdir / "ffxivboot.exe";
+    auto bootold = bootdir / "ffxivboot.exe.old";
+    auto launch = fs::canonical(bootdir / "ffxivlauncher.exe");
+
+    if (GetProcess(launch))
+    {
+        MessageBoxW(nullptr, L"The FFXIV Launcher is already running", L"Already running", MB_ICONERROR);
+    }
+
+    auto pid = atoi(cmd.substr(cmd.find_first_of(' ') + 1).data());
+    auto hWait = OpenSemaphoreW(SEMAPHORE_MODIFY_STATE, FALSE, L"Global\\FFXIV_LAUNCHER_TEMP_UPDATER_WAIT");
+    if (!hWait) return UpdateError(1);
+    auto hProc = OpenProcess(SYNCHRONIZE, FALSE, pid);
+    if (!hProc) return UpdateError(2);
+    if (!ReleaseSemaphore(hWait, 1, nullptr)) return UpdateError(3);
+    if (WaitForSingleObject(hProc, INFINITE) != 0) return UpdateError(4);
+    CloseHandle(hWait);
+
+    try
+    {
+        fs::copy_file(bootold, boot, fs::copy_options::overwrite_existing);
+    }
+    catch (const fs::filesystem_error &)
+    {
+        return UpdateError(12);
+    }
+
+    STARTUPINFOW startup = { sizeof(startup) };
+    PROCESS_INFORMATION info = { 0 };
+    if (!CreateProcessW(boot.c_str(), nullptr, nullptr, nullptr, 0, 0, nullptr, bootdir.c_str(), &startup, &info)) return UpdateError(6);
+    if (!info.hProcess) return UpdateError(20);
+    if (WaitForSingleObject(info.hProcess, INFINITE) != 0) return UpdateError(21);
+
+    HANDLE hLauncher = nullptr;
+    auto start_time = std::chrono::system_clock::now();
+    for (;;)
+    {
+        if (hLauncher = GetProcess(launch)) break;
+
+        auto time = std::chrono::system_clock::now() - start_time;
+        if (time > 30'000ms)
+        {
+            return UpdateError(31);
+        }
+        Sleep(200);
+    }
+
+    if (WaitForSingleObject(hLauncher, INFINITE) != 0) return UpdateError(32);
+
+    auto self_path = GetSelfPath();
+
+    try
+    {
+        fs::copy_file(boot, bootold, fs::copy_options::overwrite_existing);
+        fs::copy_file(self_path, boot, fs::copy_options::overwrite_existing);
+    }
+    catch (const fs::filesystem_error &)
+    {
+        return UpdateError(40);
+    }
+
+    Beep(440, 60);
 
     return 0;
 }

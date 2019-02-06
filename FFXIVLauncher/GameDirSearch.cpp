@@ -20,6 +20,13 @@ static std::optional<std::pair<LocationType, fs::path>> RootCwd(int i);
 static std::optional<std::pair<LocationType, fs::path>> RootDrives(int i);
 static EnumerateSearchRoot SEARCH_ROOTS[] = { RootCwd, RootDrives };
 
+std::filesystem::path GetSelfPath()
+{
+    wchar_t self_path_buf[2048] = { 0 };
+    GetModuleFileNameW(GetModuleHandleA(nullptr), self_path_buf, 2048);
+    return fs::canonical(self_path_buf);
+}
+
 std::optional<fs::path> TryFindGameDir()
 {
     for (auto root_iter : SEARCH_ROOTS)
