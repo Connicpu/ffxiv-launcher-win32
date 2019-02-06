@@ -99,7 +99,7 @@ void LaunchUpdater()
     auto self_path = GetSelfPath();
     auto boot = fs::canonical(CREDENTIALS.game_dir / "boot/ffxivboot.exe");
 
-    if (self_path == boot)
+    if (self_path == boot || BootWasReplaced())
     {
         auto temp = fs::temp_directory_path() / "ffxivboot.temp.exe";
         fs::copy_file(self_path, temp, fs::copy_options::overwrite_existing);
