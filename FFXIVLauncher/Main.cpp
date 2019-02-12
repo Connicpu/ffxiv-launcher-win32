@@ -217,7 +217,5 @@ static int RunUpdateWatcher(std::string_view cmd)
         return UpdateError(40);
     }
 
-    Beep(440, 60);
-
     return 0;
 }
