@@ -255,8 +255,6 @@ static LoginResult GetRealSID(const std::string & sid, std::string & result)
     auto hr = DoRequest(req, resp);
     if (FAILED(hr)) return LoginResult::NetworkError;
 
-	std::string utf8_result(resp.body.begin(), resp.body.end());
-
     if (resp.status == 409 || (resp.status == 200 && resp.body.size() > 0))
     {
         return LoginResult::UpdateRequired;
