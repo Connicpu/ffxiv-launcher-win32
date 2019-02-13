@@ -156,9 +156,9 @@ static void InitializeUI(HWND dialog) noexcept
 
     if (self_path != boot)
     {
-        auto selfsize = fs::file_size(self_path);
-        auto bootsize = fs::file_size(boot);
-        if (selfsize != bootsize)
+        auto selfhash = HashFile(self_path);
+        auto boothash = HashFile(boot);
+        if (selfhash != boothash)
         {
             auto hInstall = GetDlgItem(dialog, IDC_INSTALLBTN);
             auto style = GetWindowLongW(hInstall, GWL_STYLE);

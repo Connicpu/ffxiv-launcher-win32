@@ -329,6 +329,22 @@ static void EncodeFormURIComponent(std::ostream & output, char c)
 
 bool HashFile(std::ostream & output, const fs::path & path)
 {
+    byte buf[160 / 8];
+    HashFile(buf, path);
+
+    output << fs::file_size(path) << '/';
+    output << std::hex;
+    for (size_t i = 0; i < 160 / 8; i++)
+    {
+        output << std::setfill('0') << std::setw(2) << (uint32_t)buf[i];
+    }
+    output << std::dec;
+
+    return true;
+}
+
+bool HashFile(byte(&output)[160 / 8], const fs::path & path)
+{
     HCRYPTPROV hProv = 0;
     HCRYPTHASH hHash = 0;
 
@@ -360,17 +376,8 @@ bool HashFile(std::ostream & output, const fs::path & path)
         return false;
     }
 
-    numread = 160 / 8;
-    CryptGetHashParam(hHash, HP_HASHVAL, buf, &numread, 0);
-
-    output << fs::file_size(path) << '/';
-    output << std::hex;
-    for (size_t i = 0; i < numread; i++)
-    {
-        output << std::setfill('0') << std::setw(2) << (uint32_t)buf[i];
-    }
-    output << std::dec;
-
+    numread = sizeof(output);
+    CryptGetHashParam(hHash, HP_HASHVAL, output, &numread, 0);
     return true;
 }
 
