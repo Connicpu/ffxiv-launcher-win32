@@ -3,6 +3,7 @@
 #include "Http.h"
 #include "Credentials.h"
 #include "GameDirSearch.h"
+#include "json.hpp"
 
 struct LoginResponse
 {
@@ -44,7 +45,6 @@ static const std::regex STORED_PAT{ R"#(<input type="hidden" name="_STORED_" val
 static const std::regex TOO_MANY_LOGINS_PAT{ R"#(^\s*window\.external\.user\("login=auth,ng,err,Because password entry has failed multiple times)#" };
 static const std::regex INVALID_CRED_PAT{ R"#(^\s*window\.external\.user\("login=auth,ng,err)#" };
 static const std::regex LOGIN_PAT{ R"#(^\s*window\.external\.user\("login=(.*)"\);)#" };
-static const std::regex ARRSTATUS_PAT{ R"#("Lobby"\s*:\s*(\d+))#" };
 
 LoginResult PerformLogin()
 {
@@ -282,14 +282,15 @@ bool IsLobbyServerReady()
 
     std::string utf8_result(resp.body.begin(), resp.body.end());
 
-    std::smatch matches;
-    if (!std::regex_search(utf8_result, matches, ARRSTATUS_PAT))
+    try
+    {
+        auto data = nlohmann::json::parse(resp.body);
+        return (int)data["Lobby"] != 0;
+    }
+    catch (...)
     {
         return true; // ARR Status is getting fucked up, let's launch anyways
     }
-
-    auto status = atoi(matches[1].str().c_str());
-    return status != 0;
 }
 
 static std::vector<uint8_t> FormEncode(std::initializer_list<std::pair<const char *, std::string_view>> const &data)
