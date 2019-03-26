@@ -5,6 +5,7 @@
 #include "Credentials.h"
 #include "Login.h"
 #include "GameDirSearch.h"
+#include "StatusWait.h"
 
 static int RunLauncher(HINSTANCE hinst);
 static int RunUpdateWatcher(std::string_view cmd);
@@ -61,6 +62,13 @@ static int RunLauncher(HINSTANCE hinst)
 
         switch (PerformLogin())
         {
+            case LoginResult::Maintenance:
+                if (!ShowStatusWaitDialog(hinst))
+                {
+                    break;
+                }
+                // Intentional fallthrough: the server is back up now
+
             case LoginResult::Success:
                 LaunchGame();
                 break;

@@ -8,13 +8,14 @@ enum class LoginResult
     UpdateRequired,
     CuckedBySquare,
     NetworkError,
+    Maintenance,
 };
 
 LoginResult PerformLogin();
 void LaunchGame();
 void LaunchUpdater();
 bool BootWasReplaced();
-
+bool IsLobbyServerReady();
 
 bool HashFile(byte(&buf)[160 / 8], const fs::path &path);
 

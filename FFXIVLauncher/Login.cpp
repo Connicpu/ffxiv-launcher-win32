@@ -1,4 +1,4 @@
-#include "Common.h"
+﻿#include "Common.h"
 #include "Login.h"
 #include "Http.h"
 #include "Credentials.h"
@@ -38,11 +38,13 @@ static std::string GAME_VER;
 constexpr const char *LOGIN_PAGE = "https://ffxiv-login.square-enix.com/oauth/ffxivarr/login/top?lng=en&rgn=";
 constexpr const char *LOGIN_URL = "https://ffxiv-login.square-enix.com/oauth/ffxivarr/login/login.send";
 constexpr const char *SESSION_URL = "https://patch-gamever.ffxiv.com/http/win32/ffxivneo_release_game/";
+constexpr const char *ARRSTATUS_URL = "https://arrstatus.com/home/getWorldStatus";
 
 static const std::regex STORED_PAT{ R"#(<input type="hidden" name="_STORED_" value="([^"]+)")#" };
 static const std::regex TOO_MANY_LOGINS_PAT{ R"#(^\s*window\.external\.user\("login=auth,ng,err,Because password entry has failed multiple times)#" };
 static const std::regex INVALID_CRED_PAT{ R"#(^\s*window\.external\.user\("login=auth,ng,err)#" };
 static const std::regex LOGIN_PAT{ R"#(^\s*window\.external\.user\("login=(.*)"\);)#" };
+static const std::regex ARRSTATUS_PAT{ R"#("Lobby"\s*:\s*(\d+))#" };
 
 LoginResult PerformLogin()
 {
@@ -260,9 +262,34 @@ static LoginResult GetRealSID(const std::string & sid, std::string & result)
         return LoginResult::UpdateRequired;
     }
 
+    if (resp.status == 204 && !IsLobbyServerReady())
+    {
+        return LoginResult::Maintenance;
+    }
+
     result = resp.patch_id;
 
     return LoginResult::Success;
+}
+
+bool IsLobbyServerReady()
+{
+    Request req = { Method::GET, ARRSTATUS_URL };
+
+    Response resp;
+    auto hr = DoRequest(req, resp);
+    if (FAILED(hr)) return true; // ARR Status is down, just assume we're gonna be fine 🤷‍
+
+    std::string utf8_result(resp.body.begin(), resp.body.end());
+
+    std::smatch matches;
+    if (!std::regex_search(utf8_result, matches, ARRSTATUS_PAT))
+    {
+        return true; // ARR Status is getting fucked up, let's launch anyways
+    }
+
+    auto status = atoi(matches[1].str().c_str());
+    return status != 0;
 }
 
 static std::vector<uint8_t> FormEncode(std::initializer_list<std::pair<const char *, std::string_view>> const &data)

@@ -156,6 +156,7 @@
     <ClCompile Include="LoginDialog.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="OTPDialog.cpp" />
+    <ClCompile Include="StatusWait.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
@@ -166,6 +167,7 @@
     <ClInclude Include="LoginDialog.h" />
     <ClInclude Include="OTPDialog.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="StatusWait.h" />
     <ClInclude Include="Win.h" />
   </ItemGroup>
   <ItemGroup>
