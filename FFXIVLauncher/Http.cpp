@@ -1,9 +1,34 @@
 #include "Common.h"
 #include "Http.h"
+#include <cassert>
+#include <string>
 
 template <typename T> using ComPtr = ATL::CComPtr<T>;
 
-static const char *const USER_AGENT = "SQEXAuthor/2.0.0(Windows 6.2; ja-jp; 15c5fd77b2)";
+static char ToHex(uint8_t in)
+{
+    assert(in < 16);
+    if (in < 10) return '0' + in;
+    return 'a' + in - 10;
+}
+
+static std::string CalcUserAgent()
+{
+    // Just use the MAC address
+    UUID uuid;
+    UuidCreateSequential(&uuid);
+
+    char mac_string[11] = { 0 };
+    for (int i = 0; i < 5; ++i)
+    {
+        mac_string[i * 2] = ToHex(uuid.Data4[i + 3] >> 4);
+        mac_string[i * 2 + 1] = ToHex(uuid.Data4[i + 3] & 0xF);
+    }
+
+    return std::string("SQEXAuthor/2.0.0(Windows 6.2; ja-jp; ") + mac_string + ")";
+}
+
+static const std::string USER_AGENT = CalcUserAgent();
 
 static const char *const VERBS[2] =
 {
@@ -48,13 +73,22 @@ HRESULT DoRequest(const Request &req, Response &response)
         goto cleanup;
     }
 
-    hI = InternetOpenA(USER_AGENT, INTERNET_OPEN_TYPE_DIRECT, nullptr, nullptr, 0);
+    hI = InternetOpenA(USER_AGENT.c_str(), INTERNET_OPEN_TYPE_DIRECT, nullptr, nullptr, 0);
     if (hI == nullptr) goto fail;
 
     hCon = InternetConnectA(hI, url.host.c_str(), 443, nullptr, nullptr, INTERNET_SERVICE_HTTP, 0, 0);
     if (hCon == nullptr) goto fail;
 
-    hReq = HttpOpenRequestA(hCon, VERBS[(int)req.method], url.path.c_str(), "HTTP/1.1", nullptr, nullptr, INTERNET_FLAG_SECURE, 0);
+    hReq = HttpOpenRequestA(
+        hCon,
+        VERBS[(int)req.method],
+        url.path.c_str(),
+        "HTTP/1.1",
+        nullptr,
+        nullptr,
+        INTERNET_FLAG_SECURE | INTERNET_FLAG_RELOAD,
+        0
+    );
     if (hReq == nullptr) goto fail;
 
     if (req.headers.size() > 0)

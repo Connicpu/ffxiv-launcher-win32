@@ -183,6 +183,9 @@
     <Image Include="dalamud.ico" />
     <Image Include="icon_hide.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="PatchFileNotes.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

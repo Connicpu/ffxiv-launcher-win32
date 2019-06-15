@@ -66,6 +66,6 @@ static void InitializeUI(HWND dialog) noexcept
     auto appIcon = LoadIconW(GetModuleHandleW(nullptr), MAKEINTRESOURCE(IDI_APPICON));
     SendMessageW(dialog, WM_SETICON, ICON_BIG, (LPARAM)appIcon);
 
-    SetTimer(dialog, 69, 15'000, nullptr);
+    SetTimer(dialog, /*id=*/69, 20'000/*ms*/, nullptr);
     SendDlgItemMessageW(dialog, IDC_PROGRESS1, PBM_SETMARQUEE, TRUE, 1);
 }

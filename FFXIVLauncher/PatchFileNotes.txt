@@ -1,0 +1,41 @@
+Very very incomplete notes, the ramblings of an insane girl who wants to make her own patcher for some godsforsaken reason
+
+# Patch file
+
+# HIST Entry
+
+# APLY Entry
+Entry length : 4 bytes (big endian)
+Signature : 4 bytes "APLY"
+??? : 4 bytes (big endian)
+Entry data : [Entry length] bytes
+
+# SQPK Entry
+Container length : 4 bytes (big endian)
+Signature : 4 bytes "SQPK"
+Container length : 4 bytes (big endian) (yes it seems to be duplicated; data integrity reasons?)
+Container data : [Container length] bytes
+
+All containers seem to start with a 2 byte magic marker that determines
+what kind of data is stored in there.
+
+Types:
+- "T" (TBD)
+- "X" (TBD)
+- "FA" (Raw file record?)
+
+# Raw file record?
+
+Type marker? : 2 bytes "FA"
+??? : 14 bytes (usually all 0 but not always? has nothing to do with padding len)
+Output file len : 4 bytes (big endian)
+File name len : 4 bytes (big endian)
+??? : 4 bytes (always 0?)
+File name : [File name len] bytes
+??? : 4 bytes (little endian?) (appears to always be 0x10)
+??? : 4 bytes (always 0?)
+Data len 1 : 4 bytes (little endian) (is the array len if compressed, ??? when uncompressed)
+Data len 2 : 4 bytes (little endian) (output length, and array len if compressed)
+Patch data : [File data len] bytes
+Padding : ??????? bytes (whyyyyy)
+

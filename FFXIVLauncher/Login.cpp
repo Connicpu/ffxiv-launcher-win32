@@ -274,7 +274,15 @@ static LoginResult GetRealSID(const std::string & sid, std::string & result)
 
 bool IsLobbyServerReady()
 {
-    Request req = { Method::GET, ARRSTATUS_URL };
+    Request req =
+    {
+        Method::GET,
+        ARRSTATUS_URL,
+        {
+            {"Referer", "https://arrstatus.com/"},
+            {"Cookie", "status=1"},
+        }
+    };
 
     Response resp;
     auto hr = DoRequest(req, resp);
