@@ -9,7 +9,7 @@ static void InitializeUI(HWND dialog) noexcept;
 bool ShowStatusWaitDialog(HINSTANCE hinst) noexcept
 {
     const auto result = DialogBoxW(hinst, MAKEINTRESOURCE(IDD_LOBBYSERVER), nullptr, DialogHandler);
-    return false;
+    return result == IDOK;
 }
 
 static INT_PTR CALLBACK DialogHandler(HWND dialog, UINT msg, WPARAM wp, LPARAM lp) noexcept
@@ -29,6 +29,12 @@ static INT_PTR CALLBACK DialogHandler(HWND dialog, UINT msg, WPARAM wp, LPARAM l
                 case IDCANCEL:
                 {
                     EndDialog(dialog, IDCANCEL);
+                    return TRUE;
+                }
+
+                case IDOK:
+                {
+                    EndDialog(dialog, IDOK);
                     return TRUE;
                 }
             }
