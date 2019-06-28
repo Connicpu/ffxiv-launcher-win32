@@ -262,12 +262,12 @@ static LoginResult GetRealSID(const std::string & sid, std::string & result)
         return LoginResult::UpdateRequired;
     }
 
+    result = resp.patch_id;
+
     if (resp.status == 204 && IsLobbyServerReady() != ServerStatus::LobbyUp)
     {
         return LoginResult::Maintenance;
     }
-
-    result = resp.patch_id;
 
     return LoginResult::Success;
 }
