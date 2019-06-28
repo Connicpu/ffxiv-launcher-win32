@@ -11,11 +11,19 @@ enum class LoginResult
     Maintenance,
 };
 
+enum class ServerStatus
+{
+    LobbyUp,
+    LobbyDown,
+    NetworkError,
+    BadData,
+};
+
 LoginResult PerformLogin();
 void LaunchGame();
 void LaunchUpdater();
 bool BootWasReplaced();
-bool IsLobbyServerReady();
+ServerStatus IsLobbyServerReady();
 
 bool HashFile(byte(&buf)[160 / 8], const fs::path &path);
 

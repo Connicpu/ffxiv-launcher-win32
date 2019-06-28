@@ -262,7 +262,7 @@ static LoginResult GetRealSID(const std::string & sid, std::string & result)
         return LoginResult::UpdateRequired;
     }
 
-    if (resp.status == 204 && !IsLobbyServerReady())
+    if (resp.status == 204 && IsLobbyServerReady() != ServerStatus::LobbyUp)
     {
         return LoginResult::Maintenance;
     }
@@ -272,7 +272,7 @@ static LoginResult GetRealSID(const std::string & sid, std::string & result)
     return LoginResult::Success;
 }
 
-bool IsLobbyServerReady()
+ServerStatus IsLobbyServerReady()
 {
     Request req =
     {
@@ -286,18 +286,21 @@ bool IsLobbyServerReady()
 
     Response resp;
     auto hr = DoRequest(req, resp);
-    if (FAILED(hr)) return true; // ARR Status is down, just assume we're gonna be fine 🤷‍
+    if (FAILED(hr)) return ServerStatus::NetworkError; // ARR Status is down, just assume we're gonna be fine 🤷‍
+
+    if (resp.status >= 500)
+        return ServerStatus::LobbyDown;
 
     std::string utf8_result(resp.body.begin(), resp.body.end());
 
     try
     {
         auto data = nlohmann::json::parse(resp.body);
-        return (int)data["Lobby"] != 0;
+        return (int)data["Lobby"] != 0 ? ServerStatus::LobbyUp : ServerStatus::LobbyDown;
     }
     catch (...)
     {
-        return true; // ARR Status is getting fucked up, let's launch anyways
+        return ServerStatus::BadData; // ARR Status is getting fucked up, let's launch anyways
     }
 }
 

@@ -39,9 +39,15 @@ static INT_PTR CALLBACK DialogHandler(HWND dialog, UINT msg, WPARAM wp, LPARAM l
         {
             if (wp == 69)
             {
-                if (IsLobbyServerReady())
+                switch (IsLobbyServerReady())
                 {
-                    EndDialog(dialog, IDOK);
+                    case ServerStatus::LobbyUp:
+                    case ServerStatus::NetworkError:
+                    case ServerStatus::BadData:
+                        EndDialog(dialog, IDOK);
+                        break;
+                    case ServerStatus::LobbyDown:
+                        break;
                 }
                 return TRUE;
             }
