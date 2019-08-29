@@ -16,6 +16,14 @@ std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> UTF_CONVERT;
 
 void Credentials::Load()
 {
+    LPSTR pcmd = GetCommandLineA();
+    std::string_view cmd(pcmd);
+    if (cmd.find("-issteam", 0) != std::string::npos) {
+        is_steam = true;
+    }
+    else {
+        is_steam = false;
+    }
     std::vector<uint8_t> data;
     if (ReadFromRegistry(data) != S_OK) return;
     if (data.size() < 9) return;

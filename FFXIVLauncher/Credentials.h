@@ -15,6 +15,7 @@ public:
     bool use_otp;
     bool skip_login;
     bool hide_username;
+    bool is_steam;
 
     std::filesystem::path game_dir;
     std::string username;

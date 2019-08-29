@@ -87,8 +87,13 @@ void LaunchGame()
         << " DEV.MaxEntitledExpansionID=" << EXPANSION_LEVEL
         << " SYS.Region=" << REGION
         << " ver=" << GAME_VER;
-    auto args = arb.str();
 
+    if (CREDENTIALS.is_steam) {
+        arb << " IsSteam=1";
+        SetEnvironmentVariableA("IS_FFXIV_LAUNCH_FROM_STEAM", "1");
+    }
+
+    auto args = arb.str();
     auto cwd = (CREDENTIALS.game_dir / "boot").generic_string();
 
     STARTUPINFOA startup = { sizeof(startup) };
@@ -151,11 +156,21 @@ static std::string GetLocalGamever()
     return std::string(data, pos);
 }
 
+static std::string GetLoginPage()
+{
+    if (CREDENTIALS.is_steam) {
+        return LOGIN_PAGE + std::to_string(LANGUAGE) + "isft=0&issteam=1";
+    }
+    else {
+        return LOGIN_PAGE + std::to_string(LANGUAGE) + "isft=0&issteam=0";
+    }
+}
+
 static LoginResult GetStored(std::string & result)
 {
     Request req = {
         Method::GET,
-        LOGIN_PAGE + std::to_string(LANGUAGE),
+        GetLoginPage(),
     };
 
     Response resp;
@@ -181,7 +196,7 @@ static LoginResult GetBaseLogin(const std::string & stored, LoginResponse & resu
         Method::POST,
         LOGIN_URL,
         {
-            {"Referer", LOGIN_PAGE + std::to_string(LANGUAGE)},
+            {"Referer", GetLoginPage()},
             {"Content-Type", "application/x-www-form-urlencoded"},
         },
         FormEncode({

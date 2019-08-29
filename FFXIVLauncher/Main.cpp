@@ -16,7 +16,7 @@ INT WINAPI WinMain(HINSTANCE hinst, HINSTANCE, LPSTR pcmd, int)
     CREDENTIALS.Load();
 
     std::string_view cmd(pcmd);
-    if (cmd.find("update_ffxivboot", 0) == 0)
+    if (cmd.find("update_ffxivboot", 0) != std::string::npos)
     {
         return RunUpdateWatcher(cmd);
     }
@@ -173,7 +173,7 @@ static int RunUpdateWatcher(std::string_view cmd)
         MessageBoxW(nullptr, L"The FFXIV Launcher is already running", L"Already running", MB_ICONERROR);
     }
 
-    auto pid = atoi(cmd.substr(cmd.find_first_of(' ') + 1).data());
+    auto pid = atoi(cmd.substr(cmd.find("update_ffxivboot") + 17).data());
     auto hWait = OpenSemaphoreW(SEMAPHORE_MODIFY_STATE, FALSE, L"Global\\FFXIV_LAUNCHER_TEMP_UPDATER_WAIT");
     if (!hWait) return UpdateError(1);
     auto hProc = OpenProcess(SYNCHRONIZE, FALSE, pid);
@@ -191,9 +191,16 @@ static int RunUpdateWatcher(std::string_view cmd)
         return UpdateError(12);
     }
 
-    STARTUPINFOW startup = { sizeof(startup) };
+    std::ostringstream arb;
+    arb << boot;
+    if (cmd.find("-issteam", 0) != std::string::npos) {
+        arb << " -issteam";
+    }
+    auto args = arb.str();
+
+    STARTUPINFOA startup = { sizeof(startup) };
     PROCESS_INFORMATION info = { 0 };
-    if (!CreateProcessW(boot.c_str(), nullptr, nullptr, nullptr, 0, 0, nullptr, bootdir.c_str(), &startup, &info)) return UpdateError(6);
+    if (!CreateProcessA(boot.generic_string().c_str(), args.data(), nullptr, nullptr, 0, 0, nullptr, bootdir.generic_string().c_str(), &startup, &info)) return UpdateError(6);
     if (!info.hProcess) return UpdateError(20);
     if (WaitForSingleObject(info.hProcess, INFINITE) != 0) return UpdateError(21);
 
