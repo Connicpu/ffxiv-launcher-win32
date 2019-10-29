@@ -194,6 +194,7 @@ static int RunUpdateWatcher(std::string_view cmd)
     std::ostringstream arb;
     arb << boot;
     if (cmd.find("-issteam", 0) != std::string::npos) {
+        SetEnvironmentVariableA("IS_FFXIV_LAUNCH_FROM_STEAM", "1");
         arb << " -issteam";
     }
     auto args = arb.str();

@@ -105,6 +105,11 @@ void LaunchUpdater()
 {
     auto self_path = GetSelfPath();
     auto boot = fs::canonical(CREDENTIALS.game_dir / "boot/ffxivboot.exe");
+    std::wostringstream args;
+    if (CREDENTIALS.is_steam) {
+        SetEnvironmentVariableA("IS_FFXIV_LAUNCH_FROM_STEAM", "1");
+        args << L"-issteam ";
+    }
 
     if (self_path == boot || BootWasReplaced())
     {
@@ -112,14 +117,15 @@ void LaunchUpdater()
         fs::copy_file(self_path, temp, fs::copy_options::overwrite_existing);
 
         auto pid = GetCurrentProcessId();
-        auto args = L"update_ffxivboot " + std::to_wstring(pid);
+        args << L"update_ffxivboot " + std::to_wstring(pid);
 
         auto hWait = CreateSemaphoreW(nullptr, 0, 1, L"Global\\FFXIV_LAUNCHER_TEMP_UPDATER_WAIT");
+        std::wstring argsStr = args.str();
 
         SHELLEXECUTEINFOW info = { sizeof(info) };
         info.lpVerb = L"runas";
         info.lpFile = temp.c_str();
-        info.lpParameters = args.c_str();
+        info.lpParameters = argsStr.c_str();
         ShellExecuteExW(&info);
 
         WaitForSingleObject(hWait, 5000);
@@ -128,10 +134,11 @@ void LaunchUpdater()
     else
     {
         auto cwd = CREDENTIALS.game_dir / "boot";
+        std::wstring argsStr = args.str();
 
         STARTUPINFOW startup = { sizeof(startup) };
         PROCESS_INFORMATION info = { 0 };
-        CreateProcessW(boot.c_str(), nullptr, nullptr, nullptr, 0, 0, nullptr, cwd.c_str(), &startup, &info);
+        CreateProcessW(boot.c_str(), argsStr.data(), nullptr, nullptr, 0, 0, nullptr, cwd.c_str(), &startup, &info);
     }
 }
 
